@@ -9,6 +9,7 @@ class Restaurant {
   final String time;
   final String fee;
   final String emoji;
+  final String imageUrl;
   final String category;
   final int reviewCount;
   final List<MenuItem> menu;
@@ -20,6 +21,7 @@ class Restaurant {
     required this.time,
     required this.fee,
     required this.emoji,
+    this.imageUrl = '',
     this.category = 'Restaurants',
     this.reviewCount = 0,
     this.menu = const [],

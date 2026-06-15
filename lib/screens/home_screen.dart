@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'restaurant_details_screen.dart';
 import 'change_address_screen.dart';
+import '../data/app_data_provider.dart';
+import '../data/models.dart';
 
 // ═══════════════════════════════════════════════════════════════════
-//  HOME SCREEN — DeliVip Accueil
+//  HOME SCREEN — DeliVip Accueil (données synchronisées avec Admin)
 // ═══════════════════════════════════════════════════════════════════
 
 class HomeScreen extends StatefulWidget {
@@ -18,9 +21,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategory = 0;
   int _currentBannerPage = 0;
   late PageController _bannerController;
-  final List<String> _categories = [
-    'Tous', 'Burgers', 'Pizza', 'Sushi', 'Tacos', 'Poulet', 'Desserts',
-  ];
+
+  List<String> get _categories => context.watch<AppDataProvider>().categories
+      .where((c) => c.isActive)
+      .map((c) => c.name)
+      .toList();
 
   @override
   void initState() {
