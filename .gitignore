@@ -66,12 +66,10 @@ web/icons/
 **/windows/runner/Debug/
 **/linux/runner/Debug/
 
-# ─── Files gênants ───────────────────────────────────
-c
-R
+# ─── Fichiers de setup / tokens ────────────────────
 token.txt
 
-# ─── Fichiers de setup ──────────────────────────────
+# ─── Fichiers parent exclus (setup scripts) ───────
 ../create_oauth*
 ../setup_*
 ../auth_url.txt
@@ -80,3 +78,7 @@ token.txt
 ../add_firebase*
 ../get_firebase*
 ../setup_google.py
+../delivip_admin/
+
+# ─── Fichier temporaire / artefact ────────────────
+c
