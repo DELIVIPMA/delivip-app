@@ -1,0 +1,82 @@
+# ─── Flutter ──────────────────────────────────────────
+**/build/
+**/ios/.generated/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Runner.xcworkspace/xcshareddata/
+**/.android/
+**/.ios/
+*.iml
+*.lock
+*.h
+*.m
+*.swp
+*.swo
+*.pyc
+
+# ─── Dart ────────────────────────────────────────────
+.dart_tool/
+.dart_engine/
+.packages
+.pub/
+build/
+*.js_
+*.js.deps
+*.js.map
+
+# ─── IDE / Editor ────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── OS ──────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ─── Flutter Web ─────────────────────────────────────
+build/web/
+web/icons/
+
+# ─── Android ─────────────────────────────────────────
+**/android/key.properties
+**/android/.gradle/
+**/android/local.properties
+**/android/captures/
+
+# ─── iOS ─────────────────────────────────────────────
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+*.xcworkspace
+
+# ─── macOS / Windows / Linux ─────────────────────────
+**/macos/Pods/
+**/windows/runner/Debug/
+**/linux/runner/Debug/
+
+# ─── Files gênants ───────────────────────────────────
+c
+R
+token.txt
+
+# ─── Fichiers de setup ──────────────────────────────
+../create_oauth*
+../setup_*
+../auth_url.txt
+../login_gcloud*
+../create_client*
+../add_firebase*
+../get_firebase*
+../setup_google.py
