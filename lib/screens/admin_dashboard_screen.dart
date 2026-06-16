@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../theme.dart';
@@ -638,6 +639,48 @@ class _StatCardGradient extends StatelessWidget {
             ),
           ),
           Icon(icon, size: 40, color: Colors.white.withValues(alpha: 0.3)),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  COPYABLE TEXT — Click to copy any text to clipboard
+// ═══════════════════════════════════════════════════════════════════
+class _CopyableText extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  final bool showIcon;
+
+  const _CopyableText(this.text, {this.style, this.showIcon = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: text));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ تم النسخ: "$text"'),
+            duration: const Duration(seconds: 1),
+            backgroundColor: DeliVipColors.teal,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.all(12),
+          ),
+        );
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(text, style: style?.copyWith(decoration: TextDecoration.underline, decorationStyle: TextDecorationStyle.dotted) ?? GoogleFonts.inter(decoration: TextDecoration.underline, decorationStyle: TextDecorationStyle.dotted)),
+          ),
+          if (showIcon) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.copy, size: 12, color: style?.color ?? DeliVipColors.teal),
+          ],
         ],
       ),
     );
@@ -1412,6 +1455,101 @@ class _OrdersPanelState extends State<_OrdersPanel> {
   }
 
   Widget _buildOrderCard(BuildContext context, AdminOrder order) {
+    final orderDateStr = '${order.orderDate.day}/${order.orderDate.month}/${order.orderDate.year}';
+    final daysAgo = DateTime.now().difference(order.orderDate).inDays;
+    final registrationLabel = daysAgo < 1 ? 'اليوم' : daysAgo < 7 ? 'منذ $daysAgo أيام' : orderDateStr;
+    final strs = context.read<LanguageProvider>().strings; // use read not watch for event handlers
+
+    void _showOrderItems() {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: context.adminCard,
+          title: Row(
+            children: [
+              const Icon(Icons.receipt_long, color: DeliVipColors.teal, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('${strs.productsCount} — ${order.id}', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: context.adminTextPrimary)),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: order.items.length,
+              separatorBuilder: (_, _) => Divider(height: 1, color: context.adminDivider),
+              itemBuilder: (_, i) {
+                final item = order.items[i];
+                final itemTotal = item.price * item.quantity;
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: DeliVipColors.teal.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(child: Text('${i + 1}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: DeliVipColors.teal))),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.adminTextPrimary)),
+                            Text('${item.quantity} × ${item.price.toStringAsFixed(0)} ${strs.dh}', style: GoogleFonts.inter(fontSize: 11, color: context.adminGreyText)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: DeliVipColors.teal.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('${itemTotal.toStringAsFixed(0)} ${strs.dh}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: DeliVipColors.teal)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.adminBgLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${strs.total}:', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: context.adminTextPrimary)),
+                  Text('${order.total.toStringAsFixed(0)} ${strs.dh}', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: DeliVipColors.teal)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: DeliVipColors.teal, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: Text('إغلاق', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -1424,13 +1562,15 @@ class _OrdersPanelState extends State<_OrdersPanel> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(width: 4, height: 50, decoration: BoxDecoration(color: order.statusColor, borderRadius: BorderRadius.circular(2))),
+          Container(width: 4, height: 150, decoration: BoxDecoration(color: order.statusColor, borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── ID + Status ──
                 Row(
                   children: [
                     Text(order.id, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: context.adminTextPrimary)),
@@ -1447,8 +1587,52 @@ class _OrdersPanelState extends State<_OrdersPanel> {
                 ),
                 const SizedBox(height: 4),
                 Text('${order.customerName} • ${order.storeName}', style: GoogleFonts.inter(fontSize: 12, color: context.adminGreyText)),
-                Text('${order.total.toStringAsFixed(0)} ${s.dh} • ${order.items.length} ${s.items}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: context.adminTextPrimary)),
+                // ── Phone (copiable) ──
+                if (order.customerPhone.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        Icon(Icons.phone_outlined, size: 11, color: DeliVipColors.teal),
+                        const SizedBox(width: 4),
+                        _CopyableText(order.customerPhone, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: DeliVipColors.teal)),
+                      ],
+                    ),
+                  ),
+                Text('${order.total.toStringAsFixed(0)} ${strs.dh} • ${order.items.length} ${strs.items}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: context.adminTextPrimary)),
                 Text(order.deliveryAddress, style: GoogleFonts.inter(fontSize: 10, color: context.adminGreyText)),
+                const SizedBox(height: 4),
+                // ── Registration date ──
+                Row(
+                  children: [
+                    Icon(Icons.person_outline, size: 11, color: context.adminGreyText),
+                    const SizedBox(width: 4),
+                    Text('زبون: $registrationLabel', style: GoogleFonts.inter(fontSize: 10, color: context.adminGreyText)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // ── Delivery tracking info ──
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.adminBgLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      _trackInfo(Icons.map, order.distanceKm != null ? '${order.distanceKm!.toStringAsFixed(1)} km' : '-'),
+                      if (order.deliveryDuration != null)
+                        _trackInfo(Icons.timer_outlined, order.deliveryDuration!),
+                      _trackInfo(Icons.call_received, 'وصل: ${order.receivedTimeFormatted}'),
+                      if (order.confirmedAt != null)
+                        _trackInfo(Icons.check_circle_outline, 'تأكيد: ${order.confirmedTimeFormatted}'),
+                      if (order.completedAt != null)
+                        _trackInfo(Icons.task_alt, 'اكتمل: ${order.completedTimeFormatted}'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -1456,57 +1640,96 @@ class _OrdersPanelState extends State<_OrdersPanel> {
             icon: Icon(Icons.more_vert, size: 18, color: context.adminTextMuted),
             color: context.adminCard,
             onSelected: (v) {
-              setState(() => order.status = v);
-              widget.onUpdate(widget.orders);
+              if (v == '_view_items') {
+                _showOrderItems();
+              } else {
+                setState(() => order.status = v);
+                widget.onUpdate(widget.orders);
+              }
             },
             itemBuilder: (_) => [
-              PopupMenuItem(value: 'pending', child: Text('🕐 ${s.pending}')),
-              PopupMenuItem(value: 'confirmed', child: Text('✅ ${s.confirmed}')),
-              PopupMenuItem(value: 'preparing', child: Text('👨‍🍳 ${s.preparing}')),
-              PopupMenuItem(value: 'ready', child: Text('📦 ${s.ready}')),
-              PopupMenuItem(value: 'delivering', child: Text('🚚 ${s.delivering}')),
-              PopupMenuItem(value: 'delivered', child: Text('✅ ${s.delivered}')),
-              PopupMenuItem(value: 'cancelled', child: Text('❌ ${s.cancelled}')),
+              PopupMenuItem(value: '_view_items', child: Row(children: [const Icon(Icons.receipt_long, size: 16, color: DeliVipColors.teal), const SizedBox(width: 8), Text('📦 عرض المنتوجات', style: GoogleFonts.inter(fontWeight: FontWeight.w600))])),
+              const PopupMenuDivider(),
+              PopupMenuItem(value: 'pending', child: Text('🕐 ${strs.pending}')),
+              PopupMenuItem(value: 'confirmed', child: Text('✅ ${strs.confirmed}')),
+              PopupMenuItem(value: 'preparing', child: Text('👨‍🍳 ${strs.preparing}')),
+              PopupMenuItem(value: 'ready', child: Text('📦 ${strs.ready}')),
+              PopupMenuItem(value: 'delivering', child: Text('🚚 ${strs.delivering}')),
+              PopupMenuItem(value: 'delivered', child: Text('✅ ${strs.delivered}')),
+              PopupMenuItem(value: 'cancelled', child: Text('❌ ${strs.cancelled}')),
             ],
           ),
         ],
       ),
     );
   }
+
+  Widget _trackInfo(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: DeliVipColors.teal),
+        const SizedBox(width: 3),
+        Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500, color: context.adminTextSecondary)),
+      ],
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  CUSTOMERS PANEL
+//  CUSTOMERS PANEL — Improved with full name, email, delivered & cancelled
 // ═══════════════════════════════════════════════════════════════════
-class _CustomersPanel extends StatelessWidget {
-  final sampleCustomers = [
-    {'name': 'Ahmed B.', 'phone': '+212 6XX XXX XXX', 'orders': 12, 'total': '1,240 DH', 'last': 'Aujourd\'hui'},
-    {'name': 'Sara M.', 'phone': '+212 6XX XXX XXX', 'orders': 8, 'total': '890 DH', 'last': 'Hier'},
-    {'name': 'Omar K.', 'phone': '+212 6XX XXX XXX', 'orders': 15, 'total': '2,100 DH', 'last': 'Il y a 2j'},
-    {'name': 'Imane R.', 'phone': '+212 6XX XXX XXX', 'orders': 5, 'total': '430 DH', 'last': 'Il y a 3j'},
-    {'name': 'Youssef A.', 'phone': '+212 6XX XXX XXX', 'orders': 20, 'total': '3,500 DH', 'last': 'Il y a 1j'},
-    {'name': 'Fatima Z.', 'phone': '+212 6XX XXX XXX', 'orders': 3, 'total': '250 DH', 'last': 'Il y a 5j'},
-    {'name': 'Hassan M.', 'phone': '+212 6XX XXX XXX', 'orders': 7, 'total': '780 DH', 'last': 'Il y a 4j'},
-  ];
+class _CustomersPanel extends StatefulWidget {
+  @override
+  State<_CustomersPanel> createState() => _CustomersPanelState();
+}
+
+class _CustomersPanelState extends State<_CustomersPanel> {
+  String _searchQuery = '';
 
   static AdminStrings _s(BuildContext context) => context.watch<LanguageProvider>().strings;
 
-  String _getInitials(String name) {
-    final parts = name.split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}';
-    return name[0];
+  final sampleCustomers = [
+    {'firstName': 'Ahmed', 'lastName': 'Benali', 'email': 'ahmed.benali@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 10, 'cancelled': 2, 'total': '1,240 DH'},
+    {'firstName': 'Sara', 'lastName': 'Mouline', 'email': 'sara.mouline@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 7, 'cancelled': 1, 'total': '890 DH'},
+    {'firstName': 'Omar', 'lastName': 'Kacem', 'email': 'omar.kacem@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 13, 'cancelled': 2, 'total': '2,100 DH'},
+    {'firstName': 'Imane', 'lastName': 'Rami', 'email': 'imane.rami@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 4, 'cancelled': 1, 'total': '430 DH'},
+    {'firstName': 'Youssef', 'lastName': 'Amrani', 'email': 'youssef.amrani@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 18, 'cancelled': 2, 'total': '3,500 DH'},
+    {'firstName': 'Fatima', 'lastName': 'Zahraoui', 'email': 'fatima.zahraoui@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 2, 'cancelled': 1, 'total': '250 DH'},
+    {'firstName': 'Hassan', 'lastName': 'Mansouri', 'email': 'hassan.mansouri@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 6, 'cancelled': 1, 'total': '780 DH'},
+    {'firstName': 'Nadia', 'lastName': 'Fassi', 'email': 'nadia.fassi@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 9, 'cancelled': 0, 'total': '1,150 DH'},
+    {'firstName': 'Karim', 'lastName': 'Tazi', 'email': 'karim.tazi@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 5, 'cancelled': 3, 'total': '620 DH'},
+    {'firstName': 'Leila', 'lastName': 'Bennani', 'email': 'leila.bennani@email.com', 'phone': '+212 6XX XXX XXX', 'delivered': 11, 'cancelled': 1, 'total': '1,890 DH'},
+  ];
+
+  List<Map<String, dynamic>> get _filteredCustomers {
+    if (_searchQuery.isEmpty) return sampleCustomers;
+    final q = _searchQuery.toLowerCase();
+    return sampleCustomers.where((c) =>
+      (c['firstName'] as String).toLowerCase().contains(q) ||
+      (c['lastName'] as String).toLowerCase().contains(q) ||
+      (c['email'] as String).toLowerCase().contains(q) ||
+      (c['phone'] as String).toLowerCase().contains(q)
+    ).toList();
   }
 
+  String _getInitials(String first, String last) => '${first[0]}${last[0]}';
+
+  int get _totalDelivered => sampleCustomers.fold(0, (sum, c) => sum + (c['delivered'] as int));
+  int get _totalCancelled => sampleCustomers.fold(0, (sum, c) => sum + (c['cancelled'] as int));
+
   Color _getColor(String name) {
-    final colors = [DeliVipColors.teal, Colors.orange, Colors.purple, Colors.blue, Colors.red, Colors.green, Colors.indigo];
+    final colors = [DeliVipColors.teal, Colors.orange, Colors.purple, Colors.blue, Colors.red, Colors.green, Colors.indigo, Colors.pink, Colors.cyan, Colors.amber];
     return colors[name.hashCode % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
-    final strs = _CustomersPanel._s(context);
+      final strs = context.watch<LanguageProvider>().strings;
+    final customers = _filteredCustomers;
     return Column(
       children: [
+        // ── Search bar ──
         Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
           child: Container(
@@ -1516,6 +1739,7 @@ class _CustomersPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
               style: GoogleFonts.inter(fontSize: 13, color: context.adminTextPrimary),
               decoration: InputDecoration(
                 hintText: strs.searchCustomers,
@@ -1527,67 +1751,133 @@ class _CustomersPanel extends StatelessWidget {
             ),
           ),
         ),
+        // ── Stats badges ──
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
           child: Row(
             children: [
-              _badge(context, '${sampleCustomers.length}', strs.totalCustomers),
-              const SizedBox(width: 12),
-              _badge(context, '${sampleCustomers.fold(0, (sum, c) => sum + (c['orders'] as int))}', strs.totalOrdersCount),
-              const SizedBox(width: 12),
-              _badge(context, '${sampleCustomers.length * 2}', strs.newLast7Days),
+              _badge(context, '${customers.length}', strs.totalCustomers),
+              const SizedBox(width: 8),
+              _badge(context, '$_totalDelivered', 'مُوصَلة'),
+              const SizedBox(width: 8),
+              _badge(context, '$_totalCancelled', 'مُلغاة'),
             ],
           ),
         ),
         const SizedBox(height: 12),
+        // ── Customers list ──
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: sampleCustomers.length,
-            itemBuilder: (_, i) {
-              final c = sampleCustomers[i];
-              final color = _getColor(c['name'] as String);
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.adminCard,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: context.adminBorder),
-                  boxShadow: [
-                    BoxShadow(color: context.adminShadowLight, blurRadius: 8, offset: const Offset(0, 2)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: color.withValues(alpha: 0.15),
-                      child: Text(_getInitials(c['name'] as String), style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+          child: customers.isEmpty
+            ? Center(
+                child: Text(strs.noStoresFound, style: GoogleFonts.inter(fontSize: 14, color: context.adminGreyText)),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: customers.length,
+                itemBuilder: (_, i) {
+                  final c = customers[i];
+                  final fullName = '${c['firstName']} ${c['lastName']}';
+                  final color = _getColor(fullName);
+                  final delivered = c['delivered'] as int;
+                  final cancelled = c['cancelled'] as int;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: context.adminCard,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: context.adminBorder),
+                      boxShadow: [
+                        BoxShadow(color: context.adminShadowLight, blurRadius: 8, offset: const Offset(0, 2)),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(c['name'] as String, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.adminTextPrimary)),
-                          Text(c['phone'] as String, style: GoogleFonts.inter(fontSize: 12, color: context.adminGreyText)),
-                          Row(
+                    child: Row(
+                      children: [
+                        // Avatar
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: color.withValues(alpha: 0.15),
+                          child: Text(
+                            _getInitials(c['firstName'] as String, c['lastName'] as String),
+                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: color),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${c['orders']} ${strs.customers}', style: GoogleFonts.inter(fontSize: 11, color: context.adminGreyText)),
-                              const SizedBox(width: 8),
-                              Text('• ${c['total']}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: DeliVipColors.teal)),
+                              // Full name
+                              Text(fullName, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.adminTextPrimary)),
+                              const SizedBox(height: 2),
+                              // Email
+                              Row(
+                                children: [
+                                  Icon(Icons.email_outlined, size: 12, color: context.adminGreyText),
+                                  const SizedBox(width: 4),
+                                  Text(c['email'] as String, style: GoogleFonts.inter(fontSize: 11, color: context.adminGreyText)),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              // Phone
+                              Row(
+                                children: [
+                                  Icon(Icons.phone_outlined, size: 12, color: context.adminGreyText),
+                                  const SizedBox(width: 4),
+                                  Text(c['phone'] as String, style: GoogleFonts.inter(fontSize: 11, color: context.adminGreyText)),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              // Stats row: delivered | cancelled | total
+                              Row(
+                                children: [
+                                  // Delivered
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_circle, size: 12, color: Colors.green.shade600),
+                                        const SizedBox(width: 3),
+                                        Text('$delivered', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.green.shade600)),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  // Cancelled
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.cancel, size: 12, color: Colors.red.shade400),
+                                        const SizedBox(width: 3),
+                                        Text('$cancelled', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.red.shade400)),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  // Total
+                                  Text(c['total'] as String, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: DeliVipColors.teal)),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Text(c['last'] as String, style: GoogleFonts.inter(fontSize: 11, color: context.adminGreyText)),
-                  ],
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
         ),
       ],
     );

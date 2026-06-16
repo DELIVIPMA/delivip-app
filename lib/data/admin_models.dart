@@ -104,6 +104,13 @@ class AdminOrder {
   final DateTime orderDate;
   final String deliveryAddress;
   String? estimatedTime;
+  
+  // ── Delivery tracking timestamps ──
+  DateTime? receivedAt;      // الوقت اللي وصل فيه الطلب من الزبون
+  DateTime? confirmedAt;     // الوقت اللي تأكد فيه الطلب
+  DateTime? completedAt;     // الوقت اللي اكتمل فيه التوصيل
+  double? distanceKm;        // المسافة بالكيلومتر (km)
+  String? deliveryDuration;  // المدة المستغرقة (ex: "25 دقيقة")
 
   AdminOrder({
     String? id,
@@ -117,6 +124,11 @@ class AdminOrder {
     DateTime? orderDate,
     this.deliveryAddress = '',
     this.estimatedTime,
+    this.receivedAt,
+    this.confirmedAt,
+    this.completedAt,
+    this.distanceKm,
+    this.deliveryDuration,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
        orderDate = orderDate ?? DateTime.now();
 
@@ -144,6 +156,30 @@ class AdminOrder {
       case 'cancelled': return Colors.red;
       default: return Colors.grey;
     }
+  }
+  
+  /// Returns formatted received time (e.g. "14:30")
+  String get receivedTimeFormatted {
+    if (receivedAt == null) return '-';
+    final h = receivedAt!.hour.toString().padLeft(2, '0');
+    final m = receivedAt!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+  
+  /// Returns formatted confirmed time
+  String get confirmedTimeFormatted {
+    if (confirmedAt == null) return '-';
+    final h = confirmedAt!.hour.toString().padLeft(2, '0');
+    final m = confirmedAt!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+  
+  /// Returns formatted completed time
+  String get completedTimeFormatted {
+    if (completedAt == null) return '-';
+    final h = completedAt!.hour.toString().padLeft(2, '0');
+    final m = completedAt!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 }
 
@@ -315,6 +351,7 @@ List<AdminStore> getSampleStores() {
 }
 
 List<AdminOrder> getSampleOrders() {
+  final now = DateTime.now();
   return [
     AdminOrder(
       id: '#1245',
@@ -326,6 +363,10 @@ List<AdminOrder> getSampleOrders() {
       total: 102.00,
       status: 'preparing',
       deliveryAddress: '12 Rue des Far, Casablanca',
+      receivedAt: now.subtract(const Duration(minutes: 35)),
+      confirmedAt: now.subtract(const Duration(minutes: 28)),
+      distanceKm: 3.2,
+      deliveryDuration: '25-35 دقيقة',
     ),
     AdminOrder(
       id: '#1244',
@@ -337,6 +378,10 @@ List<AdminOrder> getSampleOrders() {
       total: 50.00,
       status: 'ready',
       deliveryAddress: '45 Bd Zerktouni, Casablanca',
+      receivedAt: now.subtract(const Duration(minutes: 50)),
+      confirmedAt: now.subtract(const Duration(minutes: 42)),
+      distanceKm: 1.8,
+      deliveryDuration: '15-20 دقيقة',
     ),
     AdminOrder(
       id: '#1243',
@@ -348,6 +393,11 @@ List<AdminOrder> getSampleOrders() {
       total: 135.00,
       status: 'delivered',
       deliveryAddress: '8 Rue Tantan, Casablanca',
+      receivedAt: now.subtract(const Duration(hours: 2, minutes: 15)),
+      confirmedAt: now.subtract(const Duration(hours: 2, minutes: 10)),
+      completedAt: now.subtract(const Duration(hours: 1, minutes: 30)),
+      distanceKm: 4.5,
+      deliveryDuration: '40 دقيقة',
     ),
     AdminOrder(
       id: '#1242',
@@ -359,6 +409,10 @@ List<AdminOrder> getSampleOrders() {
       total: 38.00,
       status: 'delivering',
       deliveryAddress: '3 Av. des FAR, Casablanca',
+      receivedAt: now.subtract(const Duration(minutes: 20)),
+      confirmedAt: now.subtract(const Duration(minutes: 14)),
+      distanceKm: 2.1,
+      deliveryDuration: '10-15 دقيقة',
     ),
     AdminOrder(
       id: '#1241',
@@ -370,6 +424,9 @@ List<AdminOrder> getSampleOrders() {
       total: 55.00,
       status: 'cancelled',
       deliveryAddress: '22 Rue Mohammed V, Casablanca',
+      receivedAt: now.subtract(const Duration(hours: 3)),
+      confirmedAt: now.subtract(const Duration(hours: 2, minutes: 55)),
+      distanceKm: 1.5,
     ),
     AdminOrder(
       id: '#1240',
@@ -381,6 +438,8 @@ List<AdminOrder> getSampleOrders() {
       total: 49.50,
       status: 'pending',
       deliveryAddress: '15 Bd Hassan II, Casablanca',
+      receivedAt: now.subtract(const Duration(minutes: 5)),
+      distanceKm: 1.2,
     ),
   ];
 }
