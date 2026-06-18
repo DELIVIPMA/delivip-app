@@ -6,6 +6,8 @@ import '../theme.dart';
 import '../data/admin_models.dart';
 import '../data/app_data_provider.dart';
 import '../data/localization.dart';
+import 'admin_analytics_screen.dart';
+import 'admin_stores_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 //  ADMIN DASHBOARD SCREEN — Full Backoffice DeliVip
@@ -109,6 +111,7 @@ class AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildSidebar(BuildContext context) {
     final items = [
       _SidebarItemData(Icons.dashboard, s.navDashboard, 0),
+      _SidebarItemData(Icons.bar_chart_rounded, 'Analytics', 6),
       _SidebarItemData(Icons.store, s.navStores, 1),
       _SidebarItemData(Icons.receipt_long, s.navOrders, 2),
       _SidebarItemData(Icons.people, s.navCustomers, 3),
@@ -315,7 +318,7 @@ class AdminDashboardScreenState extends State<AdminDashboardScreen> {
   //  TOP BAR                                                ║
   // ═════════════════════════════════════════════════════════╝
   Widget _buildTopBar(BuildContext context) {
-    final titles = [s.navDashboard, s.storeManagement, s.orderManagement, s.navCustomers, s.navCategories, s.appSettings];
+    final titles = [s.navDashboard, s.storeManagement, s.orderManagement, s.navCustomers, s.navCategories, s.appSettings, 'Analytics'];
     return Container(
       height: 64,
       color: context.adminTopbarBg,
@@ -368,13 +371,7 @@ class AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildPageContent(BuildContext context) {
     switch (_selectedIndex) {
       case 0: return _buildDashboardPage(context);
-      case 1: return _StoresPanel(
-        stores: _stores,
-        onUpdate: (s) {
-          setState(() => _stores = s);
-          _syncToProvider();
-        },
-      );
+      case 1: return const AdminStoresScreen();
       case 2: return _OrdersPanel(
         orders: _orders,
         onUpdate: (o) {
@@ -399,6 +396,7 @@ class AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onThemeToggle: _toggleTheme,
         isDarkMode: _isDark,
       );
+      case 6: return const AdminAnalyticsScreen();
       default: return const SizedBox();
     }
   }
@@ -653,7 +651,7 @@ class _CopyableText extends StatelessWidget {
   final TextStyle? style;
   final bool showIcon;
 
-  const _CopyableText(this.text, {this.style, this.showIcon = false});
+  const _CopyableText(this.text, {this.style}) : showIcon = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1460,7 +1458,7 @@ class _OrdersPanelState extends State<_OrdersPanel> {
     final registrationLabel = daysAgo < 1 ? 'اليوم' : daysAgo < 7 ? 'منذ $daysAgo أيام' : orderDateStr;
     final strs = context.read<LanguageProvider>().strings; // use read not watch for event handlers
 
-    void _showOrderItems() {
+    void showOrderItems() {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -1641,7 +1639,7 @@ class _OrdersPanelState extends State<_OrdersPanel> {
             color: context.adminCard,
             onSelected: (v) {
               if (v == '_view_items') {
-                _showOrderItems();
+                showOrderItems();
               } else {
                 setState(() => order.status = v);
                 widget.onUpdate(widget.orders);
