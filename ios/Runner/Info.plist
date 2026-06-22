@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Delivip utilise votre position pour vous aider à trouver et sélectionner une adresse de livraison précise.</string>
+	<key>NSLocationAccuracyUsageDescription</key>
+	<string>Delivip a besoin d'une localisation précise pour garantir une livraison au bon endroit.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -1,164 +1,326 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'admin_dashboard_screen.dart';
+import '../widgets/responsive_helper.dart';
 
-// ═══════════════════════════════════════════════════════════════
-//  ACCOUNT SCREEN — DeliVip Compte utilisateur
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  CUSTOMER PROFILE SCREEN — Apple/Uber-style Light Mode
+//  Pure white, crisp borders, clean cards
+// ═══════════════════════════════════════════════════════
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
-  static const Color _teal = Color(0xFF00BFA5);
+  static const _teal = Color(0xFF39BCA8);
 
   @override
   Widget build(BuildContext context) {
+    final horPad = ResponsiveHelper.horizontalPadding(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 4),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ResponsiveHelper.constrainWidth(
+            context,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horPad),
+              child: Column(
                 children: [
-                  // User Profile Row
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 56, height: 56,
-                          decoration: const BoxDecoration(color: _teal, shape: BoxShape.circle),
-                          child: const Icon(Icons.person, color: Colors.white, size: 28),
-                        ),
-                        const SizedBox(width: 16),
-                        Text('Mohammed Amine', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFEBEDF0)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 24),
 
-                  // Menu items
-                  _MenuItemRow(icon: '🗂', title: 'Mes commandes'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '♥', title: 'Mes favoris'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '⭐', title: 'Récompenses restaurants'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '👛', title: 'Portefeuille'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '🎁', title: 'Envoyer un cadeau'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '💼', title: 'Préférences pro', subtitle: 'Rendez vos repas de travail plus faciles', subtitleColor: _teal),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '❓', title: 'Aide'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '🏷', title: 'Promotions'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '🎟', title: 'DeliVip Pass', subtitle: 'Rejoignez gratuitement pendant 1 mois', subtitleColor: _teal),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '🛵', title: 'Livrer avec DeliVip'),
-                  _menuDivider(),
-                  _MenuItemRow(icon: '⚙', title: 'Paramètres'),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFEBEDF0)),
-                  const SizedBox(height: 20),
+                  // ─── Profile Header ─────────────────────
+                  _buildProfileHeader(context),
+                  const SizedBox(height: 28),
 
-                  // Admin button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF00BFA5), Color(0xFF00897B)]),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Panneau Admin', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                                  Text('Gérer stores, commandes, catégories', style: GoogleFonts.inter(fontSize: 11, color: Colors.white70)),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  // ─── Quick Action Cards ─────────────────
+                  _buildQuickActionRow(context),
+                  const SizedBox(height: 28),
 
-                  // À propos
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text('À propos', style: GoogleFonts.inter(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w400)),
-                  ),
+                  // ─── Settings Menu ──────────────────────
+                  _buildSettingsSection(context),
+                  const SizedBox(height: 24),
+
+                  // ─── Logout Button ──────────────────────
+                  _buildLogoutButton(context),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  PROFILE HEADER
+  // ═══════════════════════════════════════════════════════
+  Widget _buildProfileHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [_teal, Color(0xFF6ED4C2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _teal.withValues(alpha: 0.3),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                'Y',
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Name & phone
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Yassine Alami',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.phone_outlined, size: 14, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    Text(
+                      '+212 6 12 34 56 78',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.email_outlined, size: 14, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    Text(
+                      'yassine@delivip.ma',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Edit icon
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: _teal.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.edit_rounded, size: 16, color: _teal),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  QUICK ACTION ROW
+  // ═══════════════════════════════════════════════════════
+  Widget _buildQuickActionRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: _quickCard(Icons.receipt_outlined, 'My Orders', '3')),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _quickCard(Icons.location_on_outlined, 'Addresses', '2'),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickCard(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _teal.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 22, color: _teal),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
+              color: Colors.black45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  SETTINGS MENU
+  // ═══════════════════════════════════════════════════════
+  Widget _buildSettingsSection(BuildContext context) {
+    return Column(
+      children: [
+        _buildSettingItem(Icons.person_outline, 'Personal Info'),
+        _buildSettingItem(Icons.payment_outlined, 'Payment Methods'),
+        _buildSettingItem(Icons.notifications_outlined, 'Notifications'),
+        _buildSettingItem(Icons.language_outlined, 'Language'),
+        _buildSettingItem(Icons.info_outline, 'Help & Support'),
+      ],
+    );
+  }
+
+  Widget _buildSettingItem(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: _teal),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, size: 20, color: Colors.black38),
           ],
         ),
       ),
     );
   }
 
-  static Widget _menuDivider() {
-    return const Divider(height: 1, thickness: 1, indent: 20, endIndent: 20, color: Color(0xFFF0F1F3));
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Menu Item Row Widget
-// ═══════════════════════════════════════════════════════════════
-
-class _MenuItemRow extends StatelessWidget {
-  final String icon;
-  final String title;
-  final String? subtitle;
-  final Color? subtitleColor;
-
-  const _MenuItemRow({required this.icon, required this.title, this.subtitle, this.subtitleColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          SizedBox(width: 28, child: Text(icon, style: const TextStyle(fontSize: 20))),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black)),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle!, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w400, color: subtitleColor ?? Colors.grey)),
-                ],
-              ],
-            ),
+  // ═══════════════════════════════════════════════════════
+  //  LOGOUT BUTTON
+  // ═══════════════════════════════════════════════════════
+  Widget _buildLogoutButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {},
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.redAccent,
+          side: BorderSide(
+            color: Colors.redAccent.withValues(alpha: 0.3),
+            width: 1.2,
           ),
-        ],
+          backgroundColor: Colors.redAccent.withValues(alpha: 0.04),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: const Icon(Icons.logout_rounded, size: 20),
+        label: Text(
+          'Log Out',
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
       ),
     );
   }

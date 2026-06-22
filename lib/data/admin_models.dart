@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
-import 'models.dart';
+import 'models.dart' as client;
 
 // ─── ADMIN PRODUCT ──────────────────────────────────
 class AdminProduct {
@@ -25,14 +25,14 @@ class AdminProduct {
     this.isAvailable = true,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
-  MenuItem toMenuItem() => MenuItem(
-        id: id,
-        name: name,
-        description: description,
-        price: price,
-        emoji: '🍽️',
-        category: category,
-      );
+  client.MenuItem toMenuItem() => client.MenuItem(
+    id: id,
+    name: name,
+    description: description,
+    price: price,
+    emoji: '🍽️',
+    category: category,
+  );
 }
 
 // ─── ADMIN STORE ────────────────────────────────────
@@ -77,18 +77,18 @@ class AdminStore {
   String get time => '$openingHours - $closingHours';
   String get fee => '5.00 DH';
 
-  Restaurant toRestaurant() => Restaurant(
-        id: id,
-        name: name,
-        rating: rating,
-        time: time,
-        fee: fee,
-        emoji: emoji,
-        imageUrl: imageUrl,
-        category: category,
-        reviewCount: reviewCount,
-        menu: products.map((p) => p.toMenuItem()).toList(),
-      );
+  client.Restaurant toRestaurant() => client.Restaurant(
+    id: id,
+    name: name,
+    rating: rating,
+    time: time,
+    fee: fee,
+    emoji: emoji,
+    imageUrl: imageUrl,
+    category: category,
+    reviewCount: reviewCount,
+    menu: products.map((p) => p.toMenuItem()).toList(),
+  );
 }
 
 // ─── ADMIN ORDER ────────────────────────────────────
@@ -100,7 +100,8 @@ class AdminOrder {
   final String storeId;
   final List<AdminOrderItem> items;
   final double total;
-  String status; // pending, confirmed, preparing, ready, delivering, delivered, cancelled
+  String
+  status; // pending, confirmed, preparing, ready, delivering, delivered, cancelled
   final DateTime orderDate;
   final String deliveryAddress;
   String? estimatedTime;
@@ -122,27 +123,43 @@ class AdminOrder {
 
   String get statusText {
     switch (status) {
-      case 'pending': return 'En attente';
-      case 'confirmed': return 'Confirmée';
-      case 'preparing': return 'En préparation';
-      case 'ready': return 'Prête';
-      case 'delivering': return 'En livraison';
-      case 'delivered': return 'Livrée';
-      case 'cancelled': return 'Annulée';
-      default: return status;
+      case 'pending':
+        return 'En attente';
+      case 'confirmed':
+        return 'Confirmée';
+      case 'preparing':
+        return 'En préparation';
+      case 'ready':
+        return 'Prête';
+      case 'delivering':
+        return 'En livraison';
+      case 'delivered':
+        return 'Livrée';
+      case 'cancelled':
+        return 'Annulée';
+      default:
+        return status;
     }
   }
 
   Color get statusColor {
     switch (status) {
-      case 'pending': return const Color(0xFFFFA000);
-      case 'confirmed': return const Color(0xFF2196F3);
-      case 'preparing': return const Color(0xFFFF9800);
-      case 'ready': return const Color(0xFF00BFA5);
-      case 'delivering': return const Color(0xFF3F51B5);
-      case 'delivered': return const Color(0xFF4CAF50);
-      case 'cancelled': return Colors.red;
-      default: return Colors.grey;
+      case 'pending':
+        return const Color(0xFFFFA000);
+      case 'confirmed':
+        return const Color(0xFF2196F3);
+      case 'preparing':
+        return const Color(0xFFFF9800);
+      case 'ready':
+        return const Color(0xFF00BFA5);
+      case 'delivering':
+        return const Color(0xFF3F51B5);
+      case 'delivered':
+        return const Color(0xFF4CAF50);
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 }
@@ -215,7 +232,8 @@ List<AdminStore> getSampleStores() {
     AdminStore(
       id: 'r1',
       name: 'Pizza Hut',
-      description: 'La meilleure pizza de la ville. Pâtes fraîches, ingrédients de qualité.',
+      description:
+          'La meilleure pizza de la ville. Pâtes fraîches, ingrédients de qualité.',
       emoji: '🍕',
       latitude: 33.5898,
       longitude: -7.6038,
@@ -227,10 +245,34 @@ List<AdminStore> getSampleStores() {
       isActive: true,
       isFeatured: true,
       products: [
-        AdminProduct(id: 'm1', name: 'Margherita', description: 'Sauce tomate, mozzarella, basilic', price: 45.00, category: 'Pizzas'),
-        AdminProduct(id: 'm2', name: 'Pepperoni', description: 'Sauce tomate, mozzarella, pepperoni', price: 55.00, category: 'Pizzas'),
-        AdminProduct(id: 'm3', name: 'Quatre Fromages', description: 'Mozzarella, chèvre, gorgonzola, parmesan', price: 65.00, category: 'Pizzas'),
-        AdminProduct(id: 'm4', name: 'Pizza Végétarienne', description: 'Légumes frais, sauce tomate, mozzarella', price: 50.00, category: 'Pizzas'),
+        AdminProduct(
+          id: 'm1',
+          name: 'Margherita',
+          description: 'Sauce tomate, mozzarella, basilic',
+          price: 45.00,
+          category: 'Pizzas',
+        ),
+        AdminProduct(
+          id: 'm2',
+          name: 'Pepperoni',
+          description: 'Sauce tomate, mozzarella, pepperoni',
+          price: 55.00,
+          category: 'Pizzas',
+        ),
+        AdminProduct(
+          id: 'm3',
+          name: 'Quatre Fromages',
+          description: 'Mozzarella, chèvre, gorgonzola, parmesan',
+          price: 65.00,
+          category: 'Pizzas',
+        ),
+        AdminProduct(
+          id: 'm4',
+          name: 'Pizza Végétarienne',
+          description: 'Légumes frais, sauce tomate, mozzarella',
+          price: 50.00,
+          category: 'Pizzas',
+        ),
       ],
     ),
     AdminStore(
@@ -247,10 +289,34 @@ List<AdminStore> getSampleStores() {
       category: 'Restaurants',
       isActive: true,
       products: [
-        AdminProduct(id: 'm5', name: 'Big Mac', description: 'Deux steacks, salade, fromage, sauce spéciale', price: 35.00, category: 'Burgers'),
-        AdminProduct(id: 'm6', name: 'McChicken', description: 'Poulet pané, salade, mayonnaise', price: 28.00, category: 'Burgers'),
-        AdminProduct(id: 'm7', name: 'Frites Moyennes', description: 'Frites dorées et croustillantes', price: 15.00, category: 'Frites'),
-        AdminProduct(id: 'm8', name: 'McFlurry Oreo', description: 'Glace vanille, morceaux d\'Oreo', price: 22.00, category: 'Desserts'),
+        AdminProduct(
+          id: 'm5',
+          name: 'Big Mac',
+          description: 'Deux steacks, salade, fromage, sauce spéciale',
+          price: 35.00,
+          category: 'Burgers',
+        ),
+        AdminProduct(
+          id: 'm6',
+          name: 'McChicken',
+          description: 'Poulet pané, salade, mayonnaise',
+          price: 28.00,
+          category: 'Burgers',
+        ),
+        AdminProduct(
+          id: 'm7',
+          name: 'Frites Moyennes',
+          description: 'Frites dorées et croustillantes',
+          price: 15.00,
+          category: 'Frites',
+        ),
+        AdminProduct(
+          id: 'm8',
+          name: 'McFlurry Oreo',
+          description: 'Glace vanille, morceaux d\'Oreo',
+          price: 22.00,
+          category: 'Desserts',
+        ),
       ],
     ),
     AdminStore(
@@ -267,10 +333,34 @@ List<AdminStore> getSampleStores() {
       category: 'Restaurants',
       isActive: true,
       products: [
-        AdminProduct(id: 'm9', name: 'California Roll', description: 'Crabe, avocat, concombre', price: 55.00, category: 'Sushis'),
-        AdminProduct(id: 'm10', name: 'Salmon Sashimi', description: 'Saumon frais tranché finement', price: 70.00, category: 'Sashimis'),
-        AdminProduct(id: 'm11', name: 'Dragon Roll', description: 'Tempura crevettes, avocat, sauce spicy', price: 65.00, category: 'Sushis'),
-        AdminProduct(id: 'm12', name: 'Edamame', description: 'Fèves de soja à la vapeur, sel marin', price: 25.00, category: 'Entrées'),
+        AdminProduct(
+          id: 'm9',
+          name: 'California Roll',
+          description: 'Crabe, avocat, concombre',
+          price: 55.00,
+          category: 'Sushis',
+        ),
+        AdminProduct(
+          id: 'm10',
+          name: 'Salmon Sashimi',
+          description: 'Saumon frais tranché finement',
+          price: 70.00,
+          category: 'Sashimis',
+        ),
+        AdminProduct(
+          id: 'm11',
+          name: 'Dragon Roll',
+          description: 'Tempura crevettes, avocat, sauce spicy',
+          price: 65.00,
+          category: 'Sushis',
+        ),
+        AdminProduct(
+          id: 'm12',
+          name: 'Edamame',
+          description: 'Fèves de soja à la vapeur, sel marin',
+          price: 25.00,
+          category: 'Entrées',
+        ),
       ],
     ),
     AdminStore(
@@ -287,9 +377,27 @@ List<AdminStore> getSampleStores() {
       category: 'Restaurants',
       isActive: true,
       products: [
-        AdminProduct(id: 'm13', name: 'Crunchy Taco', description: 'Taco croustillant au boeuf', price: 25.00, category: 'Tacos'),
-        AdminProduct(id: 'm14', name: 'Burrito Supreme', description: 'Burrito garni boeuf, riz, haricots', price: 38.00, category: 'Burritos'),
-        AdminProduct(id: 'm15', name: 'Quesadilla Chicken', description: 'Quesadilla au poulet et fromage', price: 32.00, category: 'Quesadillas'),
+        AdminProduct(
+          id: 'm13',
+          name: 'Crunchy Taco',
+          description: 'Taco croustillant au boeuf',
+          price: 25.00,
+          category: 'Tacos',
+        ),
+        AdminProduct(
+          id: 'm14',
+          name: 'Burrito Supreme',
+          description: 'Burrito garni boeuf, riz, haricots',
+          price: 38.00,
+          category: 'Burritos',
+        ),
+        AdminProduct(
+          id: 'm15',
+          name: 'Quesadilla Chicken',
+          description: 'Quesadilla au poulet et fromage',
+          price: 32.00,
+          category: 'Quesadillas',
+        ),
       ],
     ),
     AdminStore(
@@ -306,9 +414,27 @@ List<AdminStore> getSampleStores() {
       category: 'Épicerie',
       isActive: true,
       products: [
-        AdminProduct(id: 'm16', name: 'Coca-Cola 1.5L', description: 'Boisson gazeuse', price: 12.00, category: 'Boissons'),
-        AdminProduct(id: 'm17', name: 'Lait Demi-écrémé', description: 'Lait frais 1L', price: 6.75, category: 'Produits laitiers'),
-        AdminProduct(id: 'm18', name: 'Pain complet', description: 'Pain de mie complet 500g', price: 8.50, category: 'Boulangerie'),
+        AdminProduct(
+          id: 'm16',
+          name: 'Coca-Cola 1.5L',
+          description: 'Boisson gazeuse',
+          price: 12.00,
+          category: 'Boissons',
+        ),
+        AdminProduct(
+          id: 'm17',
+          name: 'Lait Demi-écrémé',
+          description: 'Lait frais 1L',
+          price: 6.75,
+          category: 'Produits laitiers',
+        ),
+        AdminProduct(
+          id: 'm18',
+          name: 'Pain complet',
+          description: 'Pain de mie complet 500g',
+          price: 8.50,
+          category: 'Boulangerie',
+        ),
       ],
     ),
   ];
@@ -322,7 +448,10 @@ List<AdminOrder> getSampleOrders() {
       customerPhone: '+212 6XX XXX XXX',
       storeName: 'Pizza Hut',
       storeId: 'r1',
-      items: [AdminOrderItem(name: 'Margherita', quantity: 2, price: 45.00), AdminOrderItem(name: 'Coca-Cola', quantity: 1, price: 12.00)],
+      items: [
+        AdminOrderItem(name: 'Margherita', quantity: 2, price: 45.00),
+        AdminOrderItem(name: 'Coca-Cola', quantity: 1, price: 12.00),
+      ],
       total: 102.00,
       status: 'preparing',
       deliveryAddress: '12 Rue des Far, Casablanca',
@@ -333,7 +462,10 @@ List<AdminOrder> getSampleOrders() {
       customerPhone: '+212 6XX XXX XXX',
       storeName: "McDonald's",
       storeId: 'r2',
-      items: [AdminOrderItem(name: 'Big Mac', quantity: 1, price: 35.00), AdminOrderItem(name: 'Frites', quantity: 1, price: 15.00)],
+      items: [
+        AdminOrderItem(name: 'Big Mac', quantity: 1, price: 35.00),
+        AdminOrderItem(name: 'Frites', quantity: 1, price: 15.00),
+      ],
       total: 50.00,
       status: 'ready',
       deliveryAddress: '45 Bd Zerktouni, Casablanca',
@@ -344,7 +476,10 @@ List<AdminOrder> getSampleOrders() {
       customerPhone: '+212 6XX XXX XXX',
       storeName: 'Sushi Shop',
       storeId: 'r3',
-      items: [AdminOrderItem(name: 'California Roll', quantity: 2, price: 55.00), AdminOrderItem(name: 'Edamame', quantity: 1, price: 25.00)],
+      items: [
+        AdminOrderItem(name: 'California Roll', quantity: 2, price: 55.00),
+        AdminOrderItem(name: 'Edamame', quantity: 1, price: 25.00),
+      ],
       total: 135.00,
       status: 'delivered',
       deliveryAddress: '8 Rue Tantan, Casablanca',
@@ -355,7 +490,9 @@ List<AdminOrder> getSampleOrders() {
       customerPhone: '+212 6XX XXX XXX',
       storeName: 'Taco Bell',
       storeId: 'r4',
-      items: [AdminOrderItem(name: 'Burrito Supreme', quantity: 1, price: 38.00)],
+      items: [
+        AdminOrderItem(name: 'Burrito Supreme', quantity: 1, price: 38.00),
+      ],
       total: 38.00,
       status: 'delivering',
       deliveryAddress: '3 Av. des FAR, Casablanca',
@@ -377,7 +514,10 @@ List<AdminOrder> getSampleOrders() {
       customerPhone: '+212 6XX XXX XXX',
       storeName: 'Carrefour Market',
       storeId: 'r5',
-      items: [AdminOrderItem(name: 'Coca-Cola', quantity: 3, price: 12.00), AdminOrderItem(name: 'Lait', quantity: 2, price: 6.75)],
+      items: [
+        AdminOrderItem(name: 'Coca-Cola', quantity: 3, price: 12.00),
+        AdminOrderItem(name: 'Lait', quantity: 2, price: 6.75),
+      ],
       total: 49.50,
       status: 'pending',
       deliveryAddress: '15 Bd Hassan II, Casablanca',

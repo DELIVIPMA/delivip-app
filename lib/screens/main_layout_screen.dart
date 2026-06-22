@@ -1,16 +1,23 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
-import 'orders_screen.dart';
+import 'cart_screen.dart';
 import 'account_screen.dart';
 import 'restaurant_menu_screen.dart';
+
 import '../data/models.dart';
 import '../pages/category_list_page.dart';
-import '../pages/dynamic_listing_page.dart';
+import '../widgets/global_background.dart';
+import '../widgets/responsive_helper.dart';
 
-/// App Shell with persistent bottom navigation.
-/// Sub-pages (restaurant menu, category) are stacked via Stack overlay,
-/// so the bottom nav bar stays visible at all times.
+/// O(1) restaurant lookup map (shared across all navigation entry points)
+final Map<String, Restaurant> _globalRestaurantByName = {
+  for (final r in sampleRestaurants) r.name: r,
+};
+
+/// App Shell with persistent bottom navigation using floating glass nav bar.
+/// Sub-pages (restaurant menu, category) are stacked via Stack overlay.
 class MainLayoutScreen extends StatefulWidget {
   final String? initialAddress;
   const MainLayoutScreen({super.key, this.initialAddress});
@@ -26,9 +33,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   late final List<Widget> _tabs;
 
+  static const _teal = Color(0xFF39BCA8);
+  static const _dark = Color(0xFF1E1E24);
+
   @override
   void initState() {
     super.initState();
+
     _tabs = [
       HomeScreen(
         initialAddress: widget.initialAddress,
@@ -37,7 +48,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         onOpenSearch: () => _switchTab(1),
       ),
       const SearchPage(),
-      const OrdersScreen(),
+      const CartScreen(),
       const AccountScreen(),
     ];
   }
@@ -49,8 +60,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   void _openRestaurant(Restaurant r) {
     setState(
-      () =>
-          _pageStack.add(RestaurantMenuScreen(restaurant: r, onBack: _popPage)),
+      () => _pageStack.add(
+        RestaurantMenuScreen(
+          restaurant: r,
+          onBack: _popPage,
+          onNavigateToCart: () {
+            _pageStack.clear();
+            _currentIndex = 2;
+            setState(() {});
+          },
+          onNavigateToSearch: () {
+            _pageStack.clear();
+            _currentIndex = 1;
+            setState(() {});
+          },
+        ),
+      ),
     );
   }
 
@@ -61,25 +86,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           category: c,
           onBack: _popPage,
           onStoreTap: (cardItem) {
-            // Find matching restaurant from sample data by name
-            try {
-              final restaurant = sampleRestaurants.firstWhere(
-                (r) =>
-                    cardItem.name.toLowerCase().contains(
-                      r.name.toLowerCase(),
-                    ) ||
-                    r.name.toLowerCase().contains(cardItem.name.toLowerCase()),
-              );
+            // Pop the category page first, then push the restaurant menu
+            _pageStack.removeLast();
+            final restaurant = _globalRestaurantByName[cardItem.name];
+            if (restaurant != null) {
               _openRestaurant(restaurant);
-            } catch (_) {
-              // No match found: create a Restaurant from the card item data
-              final rating = double.tryParse(cardItem.rating) ?? 4.5;
-              _pageStack.add(
-                RestaurantMenuScreen(
-                  restaurant: Restaurant(
+            } else {
+              final match = _globalRestaurantByName.entries.firstWhere(
+                (e) =>
+                    cardItem.name.toLowerCase().contains(e.key.toLowerCase()) ||
+                    e.key.toLowerCase().contains(cardItem.name.toLowerCase()),
+                orElse: () => MapEntry(
+                  '',
+                  Restaurant(
                     id: cardItem.name.hashCode.toString(),
                     name: cardItem.name,
-                    rating: rating,
+                    rating: double.tryParse(cardItem.rating) ?? 4.5,
                     time: cardItem.subtitle,
                     fee: '5.00 DH',
                     emoji: '🍽️',
@@ -87,9 +109,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                     reviewCount: 100,
                     menu: [],
                   ),
-                  onBack: _popPage,
                 ),
               );
+              _openRestaurant(match.value);
             }
           },
         ),
@@ -108,119 +130,241 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
-      body: Stack(
-        children: [
-          // Main tab content
-          IndexedStack(index: _currentIndex, children: _tabs),
-          // Overlay sub-pages (above tabs, below bottom nav)
-          ..._pageStack.map((p) => Positioned.fill(child: p)),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(),
+      backgroundColor: Colors.transparent,
+      extendBody: true,
+      body: _hasSubPage
+          // ─── Sub-page : full screen overlay (no tab content visible) ──
+          ? GlobalBackground(
+              child: Stack(
+                children: [
+                  // Only the topmost sub-page is visible
+                  Positioned.fill(child: _pageStack.last),
+                ],
+              ),
+            )
+          // ─── Main tabs : show background + tab content ──
+          : GlobalBackground(
+              child: IndexedStack(index: _currentIndex, children: _tabs),
+            ),
+      bottomNavigationBar:
+          // Full‑screen pages that provide their own bottom bar (no global nav)
+          _hasSubPage && _pageStack.last is RestaurantMenuScreen
+          ? null
+          // Cart tab → CartScreen has its own pill bar → hide global nav
+          : _currentIndex == 2
+          ? null
+          : _hasSubPage
+          ? _buildBackBar()
+          : _buildGlassBottomNav(),
     );
   }
 
-  Widget _buildBottomNav() {
-    final accent = const Color(0xFF0E6B56);
-    final grey = const Color(0xFF8E8E93);
+  // ─── Back Bar (when on sub-page) ───────────────────────
+  Widget _buildBackBar() {
+    return ResponsiveHelper.constrainWidth(
+      context,
+      Padding(
+        padding: ResponsiveHelper.bottomNavPadding(context),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: _teal,
+                    onPressed: _popPage,
+                  ),
+                  Text(
+                    'Back',
+                    style: TextStyle(
+                      fontSize: ResponsiveHelper.fontSize(context, 15),
+                      fontWeight: FontWeight.w500,
+                      color: _teal,
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    // When on a sub-page, show a back bar instead of tab icons
-    if (_hasSubPage) {
-      return Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -2),
+  // ─── Floating Glass Bottom Navigation ──────────────────
+  Widget _buildGlassBottomNav() {
+    const tabIcons = [
+      Icons.home_rounded,
+      Icons.search_rounded,
+      Icons.shopping_bag_rounded,
+      Icons.person_outline_rounded,
+    ];
+    const tabLabels = ['Home', 'Search', 'Orders', 'Account'];
+    const tabCount = 4;
+
+    return ResponsiveHelper.constrainWidth(
+      context,
+      Padding(
+        padding: ResponsiveHelper.bottomNavPadding(context),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: _teal.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: _buildNavBarStack(tabCount, tabIcons, tabLabels),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the inner stack layers for the navigation bar
+  /// (pill indicator, glowing dot, tab items).
+  /// Wrapped in a single [LayoutBuilder] so [AnimatedPositioned] widgets
+  /// are valid direct children of the [Stack].
+  Widget _buildNavBarStack(
+    int tabCount,
+    List<IconData> tabIcons,
+    List<String> tabLabels,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double tabWidth = constraints.maxWidth / tabCount;
+
+        final double pillLeft = _currentIndex * tabWidth + (tabWidth - 52) / 2;
+        final double dotLeft = _currentIndex * tabWidth + (tabWidth - 6) / 2;
+
+        return Stack(
+          children: [
+            // ── Animated pill background ──
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutCubic,
+              left: pillLeft,
+              top: 10,
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: _teal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+            ),
+
+            // ── Glowing dot indicator ──
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutCubic,
+              left: dotLeft,
+              top: 5,
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _teal,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.45),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: _teal.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Tab items ──
+            Row(
+              children: List.generate(tabCount, (index) {
+                final bool isActive = index == _currentIndex;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => _switchTab(index),
+                    behavior: HitTestBehavior.translucent,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        Icon(
+                          tabIcons[index],
+                          size: 24,
+                          color: isActive
+                              ? _teal
+                              : _dark.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          tabLabels[index],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: isActive
+                                ? _teal
+                                : _dark.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  color: accent,
-                  onPressed: _popPage,
-                ),
-                Text(
-                  'Back',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: accent,
-                  ),
-                ),
-                const Spacer(),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Normal tab bar
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(Icons.home, 'Home', 0, accent, grey),
-              _navItem(Icons.search, 'Search', 1, accent, grey),
-              _navItem(Icons.shopping_bag_outlined, 'Orders', 2, accent, grey),
-              _navItem(Icons.person_outline, 'Account', 3, accent, grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(
-    IconData icon,
-    String label,
-    int index,
-    Color active,
-    Color inactive,
-  ) {
-    final on = index == _currentIndex;
-    return GestureDetector(
-      onTap: () => _switchTab(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22, color: on ? active : inactive),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: on ? active : inactive,
-              fontWeight: on ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

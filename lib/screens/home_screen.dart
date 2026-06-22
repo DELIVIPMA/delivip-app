@@ -1,486 +1,587 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'restaurant_details_screen.dart';
-import 'change_address_screen.dart';
-import '../data/app_data_provider.dart';
 import '../data/models.dart';
+import '../data/address_provider.dart';
+import '../app_theme.dart';
+import 'restaurant_menu_screen.dart';
+import 'search_screen.dart';
+import 'add_new_address_screen.dart';
+import 'notifications_screen.dart';
+import '../pages/category_list_page.dart';
+import '../widgets/home_categories_section.dart';
+import '../widgets/responsive_helper.dart';
 
-// ═══════════════════════════════════════════════════════════════════
-//  HOME SCREEN — DeliVip Accueil (données synchronisées avec Admin)
-// ═══════════════════════════════════════════════════════════════════
+// ─── RESTAURANT LOOKUP ───────────────────────────────
+final Map<String, Restaurant> _restaurantByName = {
+  for (final r in sampleRestaurants) r.name: r,
+};
 
+// ═══════════════════════════════════════════════════════
+//  HOME SCREEN – Uber Eats Light Mode
+// ═══════════════════════════════════════════════════════
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String? initialAddress;
+  final void Function(Restaurant)? onOpenRestaurant;
+  final void Function(String)? onOpenCategory;
+  final VoidCallback? onOpenSearch;
+
+  const HomeScreen({
+    super.key,
+    this.initialAddress,
+    this.onOpenRestaurant,
+    this.onOpenCategory,
+    this.onOpenSearch,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedCategory = 0;
-  int _currentBannerPage = 0;
-  late PageController _bannerController;
-
-  List<String> get _categories => context.watch<AppDataProvider>().categories
-      .where((c) => c.isActive)
-      .map((c) => c.name)
-      .toList();
-
-  @override
-  void initState() {
-    super.initState();
-    _bannerController = PageController(initialPage: 0);
-    _startAutoScroll();
+  void _openRestaurant(Restaurant r) {
+    if (widget.onOpenRestaurant != null) {
+      widget.onOpenRestaurant!(r);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => RestaurantMenuScreen(restaurant: r)),
+      );
+    }
   }
 
-  void _startAutoScroll() {
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        final nextPage = (_currentBannerPage + 1) % 2;
-        _bannerController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
-        _startAutoScroll();
-      }
-    });
+  void _openCategory(String cat) {
+    if (widget.onOpenCategory != null) {
+      widget.onOpenCategory!(cat);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CategoryListPage(category: cat)),
+      );
+    }
   }
 
-  @override
-  void dispose() {
-    _bannerController.dispose();
-    super.dispose();
+  void _openSearch() {
+    if (widget.onOpenSearch != null) {
+      widget.onOpenSearch!();
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SearchPage()),
+      );
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Top Bar ─────────────────────────────────────────
-            _buildTopBar(),
-            // ── Search Bar ──────────────────────────────────────
-            _buildSearchBar(),
-            // ── Category Chips ──────────────────────────────────
-            _buildCategoryChips(),
-            // ── Scrollable Content ──────────────────────────────
-            Expanded(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(child: _buildFeaturedBanner()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Populaires près de vous')),
-                  SliverToBoxAdapter(child: _buildPopularRestaurants()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Offres du jour')),
-                  SliverToBoxAdapter(child: _buildDailyOffers()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Rapides (moins de 20 min)')),
-                  SliverToBoxAdapter(child: _buildFastRestaurants()),
-                  SliverToBoxAdapter(child: _buildRewardsCard()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Épicerie fraîche')),
-                  SliverToBoxAdapter(child: _buildGrocerySection()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Sucreries')),
-                  SliverToBoxAdapter(child: _buildSweetsSection()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('À retirer gratuitement')),
-                  SliverToBoxAdapter(child: _buildFreePickupSection()),
-                  SliverToBoxAdapter(child: _buildSectionHeader('Dernières actualités')),
-                  SliverToBoxAdapter(child: _buildNewsSection()),
-                  const SliverToBoxAdapter(child: SizedBox(height: 90)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ TOP BAR ═══════════════════════════════════
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChangeAddressScreen()),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Agadir ▾',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, size: 20, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ SEARCH BAR ════════════════════════════════
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0F0F0),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 12),
-              child: Icon(Icons.search, size: 20, color: Colors.grey),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Restaurants et plats...',
-                  hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                style: GoogleFonts.inter(fontSize: 14, color: Colors.black),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(Icons.tune, size: 20, color: Color(0xFF00BFA5)),
-                onPressed: () {},
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ CATEGORY CHIPS ════════════════════════════
-  Widget _buildCategoryChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final isActive = _selectedCategory == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = index),
-            child: Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isActive ? Colors.black : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: isActive ? Border.all(color: Colors.black) : Border.all(color: Colors.grey.shade300),
-              ),
-              child: Center(
-                child: Text(
-                  _categories[index],
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: isActive ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ═══════════════════ FEATURED BANNER ═══════════════════════════
-  Widget _buildFeaturedBanner() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        height: 180,
-        child: PageView(
-          controller: _bannerController,
-          onPageChanged: (page) => _currentBannerPage = page,
-          children: [
-            // Banner 1: Purple - Free delivery
-            _bannerCard(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3D2C8D), Color(0xFF2A1B5E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              emoji: '\u{1F354}',
-              title: 'Livraison gratuite',
-              subtitle: 'Sur votre 1ère commande',
-              buttonText: 'Commander',
-            ),
-            // Banner 2: Teal - -50% tonight
-            _bannerCard(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00BFA5), Color(0xFF00897B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              emoji: '\u{1F355}',
-              title: '-50% ce soir',
-              subtitle: 'Offre limitée restaurants',
-              buttonText: 'Voir',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _bannerCard({
-    required LinearGradient gradient,
-    required String emoji,
-    required String title,
-    required String subtitle,
-    required String buttonText,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: Text(
-                      buttonText,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(emoji, style: const TextStyle(fontSize: 56)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ SECTION HEADER ════════════════════════════
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: Row(
-              children: [
-                Text(
-                  'Voir tout',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF00BFA5)),
-                ),
-                const Icon(Icons.chevron_right, size: 16, color: Color(0xFF00BFA5)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ RESTAURANT CARD (reusable) ═══════════════
-  Widget _buildRestaurantCard({
-    required String emoji,
-    required Color bgColor,
-    required String name,
-    required double rating,
-    required String time,
-    required String fee,
-    String? badge,
-    VoidCallback? onTap,
-  }) {
+  Widget _restaurantCard(Restaurant r) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _openRestaurant(r),
       child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withOpacity(0.06), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
+        clipBehavior: Clip.hardEdge,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image area
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Container(
-                height: 120,
-                color: bgColor,
-                child: Stack(
-                  children: [
-                    Center(child: Text(emoji, style: const TextStyle(fontSize: 40))),
-                    // Rating badge
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(20),
+            // Image - full bleed
+            SizedBox(
+              height: 160,
+              width: double.infinity,
+              child: r.imageUrl.isNotEmpty
+                  ? Image.network(
+                      r.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: Icon(
+                            Icons.restaurant_rounded,
+                            size: 40,
+                            color: Colors.grey[400],
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, size: 11, color: Color(0xFFF5C518)),
-                            const SizedBox(width: 3),
-                            Text(
-                              rating.toStringAsFixed(1),
-                              style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                      ),
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Icon(
+                          Icons.restaurant_rounded,
+                          size: 40,
+                          color: Colors.grey[400],
                         ),
                       ),
                     ),
-                    // Promo badge
-                    if (badge != null)
-                      Positioned(
-                        bottom: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            badge,
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
             ),
-            // Info
+            // Info section
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+                    r.name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: Color(0xFF39BCA8),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${r.rating}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '(${r.reviewCount}+)',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 3,
+                        height: 3,
+                        decoration: const BoxDecoration(
+                          color: Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        r.time,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.delivery_dining_rounded,
+                        size: 12,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        r.fee,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = ResponsiveHelper.isLargeScreen(context);
+    return SafeArea(
+      child: Column(
+        children: [
+          _buildTopHeader(),
+          const SizedBox(height: 8),
+          _buildSearchBar(),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: ResponsiveHelper.constrainWidth(
+                context,
+                Padding(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      _buildCategoriesSection(),
+                      const SizedBox(height: 12),
+                      _buildSectionHeader('Popular near you'),
+                      const SizedBox(height: 8),
+                      _buildPopularHorizontal(),
+                      const SizedBox(height: 16),
+                      _buildSectionHeader('All restaurants'),
+                      const SizedBox(height: 8),
+                      _buildRestaurantsList(),
+                      SizedBox(height: isTablet ? 32 : 24),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── TOP HEADER ──────────────────────────────────
+  Widget _buildTopHeader() {
+    final isTablet = ResponsiveHelper.isLargeScreen(context);
+    final horPad = ResponsiveHelper.horizontalPadding(context);
+
+    return Consumer<AddressProvider>(
+      builder: (context, addressProvider, _) {
+        final address = addressProvider.currentAddress;
+        final displayAddress = address?.streetName ?? 'Select Delivery Address';
+        final hasAddress = address != null;
+
+        IconData locationIcon;
+        if (address?.addressType.toLowerCase() == 'maison') {
+          locationIcon = Icons.home_rounded;
+        } else if (address?.addressType.toLowerCase() == 'bureau') {
+          locationIcon = Icons.work_rounded;
+        } else {
+          locationIcon = Icons.location_on_rounded;
+        }
+
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: horPad, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                hasAddress ? locationIcon : Icons.location_on_rounded,
+                color: AppTheme.primaryTeal,
+                size: isTablet ? 22 : 18,
+              ),
+              SizedBox(width: isTablet ? 10 : 6),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddNewAddressScreen(),
+                    ),
+                  );
+                },
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Deliver to',
+                          style: GoogleFonts.poppins(
+                            fontSize: ResponsiveHelper.fontSize(context, 10),
+                            color: Colors.grey[600],
+                            letterSpacing: 0.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              displayAddress,
+                              style: GoogleFonts.poppins(
+                                fontSize: ResponsiveHelper.fontSize(
+                                  context,
+                                  13,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: hasAddress
+                                    ? Colors.black
+                                    : AppTheme.primaryTeal,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 16,
+                              color: hasAddress
+                                  ? Colors.black
+                                  : AppTheme.primaryTeal,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen(),
+                    ),
+                  );
+                },
+                child: Badge(
+                  isLabelVisible: true,
+                  smallSize: 8,
+                  padding: EdgeInsets.zero,
+                  backgroundColor: Colors.redAccent,
+                  offset: const Offset(0, 2),
+                  child: Container(
+                    width: isTablet ? 42 : 36,
+                    height: isTablet ? 42 : 36,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(isTablet ? 21 : 18),
+                    ),
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      size: isTablet ? 22 : 18,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── SEARCH BAR ──────────────────────────────────
+  Widget _buildSearchBar() {
+    final horPad = ResponsiveHelper.horizontalPadding(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horPad),
+      child: GestureDetector(
+        onTap: _openSearch,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, size: 18, color: Colors.grey[600]),
+              const SizedBox(width: 10),
+              Text(
+                'Search DeliVIP...',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryTeal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '⌘K',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppTheme.primaryTeal,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── SECTION HEADER ─────────────────────────────
+  Widget _buildSectionHeader(String title) {
+    final horPad = ResponsiveHelper.horizontalPadding(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horPad),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {},
+            child: Text(
+              'See all',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryTeal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── CATEGORIES ─────────────────────────────────
+  Widget _buildCategoriesSection() {
+    return HomeCategoriesSection(onTap: (category) => _openCategory(category));
+  }
+
+  // ─── POPULAR HORIZONTAL ─────────────────────────
+  Widget _buildPopularHorizontal() {
+    final isTablet = ResponsiveHelper.isLargeScreen(context);
+    final horPad = ResponsiveHelper.horizontalPadding(context);
+    return SizedBox(
+      height: isTablet ? 200 : 160,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: horPad),
+        separatorBuilder: (_, _) => const SizedBox(width: 14),
+        itemCount: sampleRestaurants.length,
+        itemBuilder: (context, index) {
+          final r = sampleRestaurants[index];
+          return _buildPopularCard(r);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPopularCard(Restaurant r) {
+    final isTablet = ResponsiveHelper.isLargeScreen(context);
+    return GestureDetector(
+      onTap: () => _openRestaurant(r),
+      child: Container(
+        width: isTablet ? 180 : 140,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withOpacity(0.06), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: isTablet ? 110 : 90,
+              width: double.infinity,
+              child: r.imageUrl.isNotEmpty
+                  ? Image.network(
+                      r.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: Icon(
+                            Icons.restaurant_rounded,
+                            size: 28,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(color: Colors.grey[200]);
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Icon(
+                          Icons.restaurant_rounded,
+                          size: 28,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    r.name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.star, size: 11, color: Color(0xFFF5C518)),
-                      const SizedBox(width: 3),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey),
+                      Icon(
+                        Icons.star_rounded,
+                        size: 12,
+                        color: const Color(0xFF39BCA8),
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.access_time, size: 11, color: Colors.grey),
                       const SizedBox(width: 2),
                       Text(
-                        time,
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                        '${r.rating}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.moped, size: 11, color: Color(0xFF00BFA5)),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 4),
                       Text(
-                        fee,
-                        style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF00BFA5), fontWeight: FontWeight.w500),
+                        r.time,
+                        style: GoogleFonts.poppins(
+                          fontSize: 9,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
@@ -493,360 +594,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ═══════════════════ POPULAR RESTAURANTS ═══════════════════════
-  Widget _buildPopularRestaurants() {
-    return SizedBox(
-      height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildRestaurantCard(
-            emoji: '\u{1F354}',
-            bgColor: const Color(0xFFFFF3E0),
-            name: 'Burger Palace',
-            rating: 4.8,
-            time: '20-30min',
-            fee: 'Gratuit',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F355}',
-            bgColor: const Color(0xFFFFEBEE),
-            name: 'Pizza Roma',
-            rating: 4.6,
-            time: '25-35min',
-            fee: '5DH',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F363}',
-            bgColor: const Color(0xFFE8F5E9),
-            name: 'Sushi Shop',
-            rating: 4.7,
-            time: '30-40min',
-            fee: '8DH',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F32E}',
-            bgColor: const Color(0xFFFFF8E1),
-            name: 'Taco House',
-            rating: 4.5,
-            time: '20-30min',
-            fee: 'Gratuit',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ DAILY OFFERS ══════════════════════════════
-  Widget _buildDailyOffers() {
-    return SizedBox(
-      height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildRestaurantCard(
-            emoji: '\u{1F957}',
-            bgColor: const Color(0xFFE8F5E9),
-            name: 'Green Bowl',
-            rating: 4.6,
-            time: '15-25min',
-            fee: 'Gratuit',
-            badge: '\u{1F525} -30%',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F35C}',
-            bgColor: const Color(0xFFFFF3E0),
-            name: 'Noodle Bar',
-            rating: 4.4,
-            time: '20-30min',
-            fee: '5DH',
-            badge: '\u{1F525} -30%',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F357}',
-            bgColor: const Color(0xFFFFEBEE),
-            name: 'Poulet Rôti+',
-            rating: 4.7,
-            time: '25min',
-            fee: 'Gratuit',
-            badge: '\u{1F525} -30%',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ FAST RESTAURANTS ══════════════════════════
-  Widget _buildFastRestaurants() {
-    return SizedBox(
-      height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildRestaurantCard(
-            emoji: '\u{1F959}',
-            bgColor: const Color(0xFFE3F2FD),
-            name: 'Wrap & Go',
-            rating: 4.3,
-            time: '10-15min',
-            fee: '3DH',
-            badge: '\u{26A1} Rapide',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F354}',
-            bgColor: const Color(0xFFFFF3E0),
-            name: 'Fast Burger',
-            rating: 4.2,
-            time: '15min',
-            fee: 'Gratuit',
-            badge: '\u{26A1} Rapide',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-          _buildRestaurantCard(
-            emoji: '\u{1F96A}',
-            bgColor: const Color(0xFFFCE4EC),
-            name: 'Sandwich Co.',
-            rating: 4.5,
-            time: '12min',
-            fee: 'Gratuit',
-            badge: '\u{26A1} Rapide',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RestaurantDetailsScreen())),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ REWARDS CARD ══════════════════════════════
-  Widget _buildRewardsCard() {
+  // ─── RESTAURANTS LIST ───────────────────────────
+  Widget _buildRestaurantsList() {
+    final horPad = ResponsiveHelper.horizontalPadding(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFF00BFA5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const Text('\u{1F381}', style: TextStyle(fontSize: 28)),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                'Gagnez des points à chaque commande!',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00897B),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'En savoir plus',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ GROCERY SECTION ═══════════════════════════
-  Widget _buildGrocerySection() {
-    final items = [
-      {'emoji': '\u{1F34A}', 'name': 'Oranges', 'price': '15DH'},
-      {'emoji': '\u{1F34D}', 'name': 'Ananas', 'price': '25DH'},
-      {'emoji': '\u{1F353}', 'name': 'Fraises', 'price': '20DH'},
-      {'emoji': '\u{1F966}', 'name': 'Brocoli', 'price': '12DH'},
-    ];
-
-    return SizedBox(
-      height: 140,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: items.map((item) => _buildMiniCard(item['emoji']!, item['name']!, item['price']!)).toList(),
-      ),
-    );
-  }
-
-  // ═══════════════════ SWEETS SECTION ════════════════════════════
-  Widget _buildSweetsSection() {
-    final items = [
-      {'emoji': '\u{1F370}', 'name': 'Gâteau', 'price': '35DH'},
-      {'emoji': '\u{1F369}', 'name': 'Donuts', 'price': '18DH'},
-      {'emoji': '\u{1F36B}', 'name': 'Chocolat', 'price': '22DH'},
-    ];
-
-    return SizedBox(
-      height: 140,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: items.map((item) => _buildMiniCard(item['emoji']!, item['name']!, item['price']!)).toList(),
-      ),
-    );
-  }
-
-  Widget _buildMiniCard(String emoji, String name, String price) {
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(right: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: horPad),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 32)),
-          const SizedBox(height: 6),
-          Text(
-            name,
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            price,
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF00BFA5)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════ FREE PICKUP SECTION ═══════════════════════
-  Widget _buildFreePickupSection() {
-    final items = [
-      {'emoji': '\u{1F964}', 'name': 'Boisson offerte', 'resto': 'chez Burger Palace'},
-      {'emoji': '\u{1F35F}', 'name': 'Frites offertes', 'resto': 'chez Pizza Roma'},
-    ];
-
-    return SizedBox(
-      height: 120,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: items.map((item) {
-          return Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Text(item['emoji']!, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item['name']!,
-                        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item['resto']!,
-                        style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00BFA5),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Gratuit',
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  // ═══════════════════ NEWS SECTION ══════════════════════════════
-  Widget _buildNewsSection() {
-    final news = [
-      {'title': 'Nouveau: Livraison en 15min à Agadir', 'color': const Color(0xFF3D2C8D)},
-      {'title': 'Top restaurants cette semaine', 'color': const Color(0xFFE65100)},
-      {'title': 'DeliVip Pass: 1 mois gratuit', 'color': const Color(0xFF00BFA5)},
-    ];
-
-    return SizedBox(
-      height: 110,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        physics: const BouncingScrollPhysics(),
-        children: news.map((item) {
-          return Container(
-            width: 160,
-            height: 100,
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: item['color'] as Color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  item['title'] as String,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+        children: sampleRestaurants.map((r) => _restaurantCard(r)).toList(),
       ),
     );
   }

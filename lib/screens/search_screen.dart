@@ -1,42 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../widgets/glass_container.dart';
+import '../widgets/premium_search_bar.dart';
+import '../widgets/responsive_helper.dart';
+import '../app_theme.dart';
 
-// ═══════════════════════════════════════════════════════════════════
-//  SEARCH SCREEN — DeliVip Recherche
-// ═══════════════════════════════════════════════════════════════════
-
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  int _selectedTab = 0; // 0 = Tous
 
-  final List<String> _tabs = ['Tous', 'Restaurants', '\u00C9picerie', 'D\u00E9pannage', 'Alcool'];
-
-  final List<String> _recentSearches = ['Caf\u00E9', 'Irlandais'];
-
-  final List<String> _categories = [
-    'Petit-d\u00E9jeuner et Brunch',
-    'Caf\u00E9 et Th\u00E9',
-    'Chinois',
-    'Indien',
-    'Derni\u00E8res Offres',
-    'R\u00E9compenses Restaurants',
-    'Meilleur rapport qualit\u00E9',
-    'Livraison nationale',
-    'Mexicain',
-    'Fast Food',
-    'Healthy',
-    'Pizza',
-    'Sandwich',
-    'Asiatique',
-    'Boulangerie',
+  final List<_CategoryItem> _categories = const [
+    _CategoryItem(
+      'Burgers',
+      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop',
+    ),
+    _CategoryItem(
+      'Pizza',
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop',
+    ),
+    _CategoryItem(
+      'Healthy',
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=200&fit=crop',
+    ),
+    _CategoryItem(
+      'Supermarket',
+      'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop',
+    ),
+    _CategoryItem(
+      'Desserts',
+      'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=200&h=200&fit=crop',
+    ),
+    _CategoryItem(
+      'Moroccan',
+      'https://images.unsplash.com/photo-1574484284002-952d92456975?w=200&h=200&fit=crop',
+    ),
   ];
+
+  static const _teal = Color(0xFF39BCA8);
+  static const _dark = Color(0xFF1E1E24);
 
   @override
   void dispose() {
@@ -46,174 +52,129 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+    final horPad = ResponsiveHelper.horizontalPadding(context);
+    final isTablet = ResponsiveHelper.isLargeScreen(context);
+    final gridCols = ResponsiveHelper.gridColumnCount(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horPad),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Search Bar (sticky) ─────────────────────────────
-            _buildSearchBar(context),
-            // ── Filter Tabs (sticky) ────────────────────────────
-            _buildFilterTabs(),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFEBEDF0)),
-            // ── Scrollable Body ─────────────────────────────────
+            const SizedBox(height: 16),
+            // ─── Glass search bar ─────────────────────
+            PremiumSearchBar(controller: _searchController),
+            const SizedBox(height: 28),
+            // ─── Section title ────────────────────────
+            Text(
+              'Top Categories',
+              style: AppTheme.heading.copyWith(
+                fontSize: ResponsiveHelper.fontSize(context, 22),
+                color: _dark,
+              ),
+            ),
+            const SizedBox(height: 16),
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Recent searches
-                    if (_searchController.text.isEmpty) ...[
-                      _buildSectionLabel('Recherches r\u00E9centes'),
-                      ..._recentSearches.map((term) => _buildSearchRow(term)),
-                    ],
-                    // Categories
-                    _buildSectionLabel('Meilleures cat\u00E9gories', topMargin: _searchController.text.isEmpty ? 20 : 16),
-                    ..._categories.map((cat) => _buildSearchRow(cat)),
-                    const SizedBox(height: 16),
+              child: Center(
+                child: ResponsiveHelper.constrainWidth(
+                  context,
+                  SizedBox(
+                    width: double.infinity,
+                    child: GridView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: gridCols,
+                        crossAxisSpacing: isTablet ? 16 : 12,
+                        mainAxisSpacing: isTablet ? 16 : 12,
+                        childAspectRatio: ResponsiveHelper.gridAspectRatio(
+                          context,
+                        ),
+                      ),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        return _buildCategoryCard(cat.title, cat.imageUrl);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(String title, String imageUrl) {
+    return GlassContainer(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(18),
+      opacity: 0.22,
+      tintColor: Colors.white,
+      clipBehavior: Clip.hardEdge,
+      onTap: () {},
+      child: Stack(
+        children: [
+          // Image background
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(color: _teal.withValues(alpha: 0.08));
+                },
+              ),
+            ),
+          ),
+          // Gradient overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.2),
+                    Colors.black.withValues(alpha: 0.05),
                   ],
                 ),
               ),
             ),
-            // ── Bottom Nav Bar (supprimée — gérée par MainShell) ───
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ SEARCH BAR ════════════════════════════════
-  Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0F0F0),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back, size: 20, color: Colors.black),
-              onPressed: () => Navigator.of(context).maybePop(),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Nourriture, shopping, boissons, etc',
-                  hintStyle: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFAAAAAA)),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                style: GoogleFonts.inter(fontSize: 14, color: Colors.black),
-              ),
-            ),
-            if (_searchController.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {});
-                  FocusScope.of(context).requestFocus(FocusNode());
-                },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ═══════════════════ FILTER TABS ═══════════════════════════════
-  Widget _buildFilterTabs() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _tabs.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (context, index) {
-          final isActive = _selectedTab == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedTab = index),
+          ),
+          // Title
+          Positioned(
+            top: 14,
+            left: 14,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _tabs[index],
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                      color: isActive ? Colors.black : Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  if (isActive)
-                    Container(height: 2, width: 20, color: Colors.black),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ═══════════════════ SECTION LABEL ═════════════════════════════
-  Widget _buildSectionLabel(String label, {double topMargin = 16}) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, topMargin, 16, 8),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF888888)),
-      ),
-    );
-  }
-
-  // ═══════════════════ SEARCH ROW ════════════════════════════════
-  Widget _buildSearchRow(String text) {
-    return GestureDetector(
-      onTap: () {
-        _searchController.text = text;
-        _searchController.selection = TextSelection.fromPosition(
-          TextPosition(offset: text.length),
-        );
-        setState(() {});
-      },
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 20, color: Colors.grey),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: GoogleFonts.inter(fontSize: 15, color: Colors.black),
-                  ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.fontSize(context, 15),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              ],
+              ),
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFEBEDF0)),
         ],
       ),
     );
   }
+}
 
+class _CategoryItem {
+  final String title;
+  final String imageUrl;
+
+  const _CategoryItem(this.title, this.imageUrl);
 }
